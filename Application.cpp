@@ -9,6 +9,7 @@ Application::Application() {
 
 Application::~Application() {
 	delete m_window;
+	delete m_renderer;
 }
 
 
@@ -17,6 +18,9 @@ void Application::initialize() {
 	sf::String windowTitle = "Labyrinth of Minos";
 	sf::Uint32 windowStyle = sf::Style::Close;
 	m_window = new sf::RenderWindow{ windowSize, windowTitle, windowStyle };
+
+	m_level = Level{ { 5, 5 } };
+	m_renderer = new MiniMapRenderer(m_window, &m_level);
 }
 
 
@@ -40,6 +44,8 @@ void Application::update() {
 
 void Application::render() {
 	m_window->clear();
+
+	m_renderer->render(m_player);
 
 	m_window->display();
 }
