@@ -16,7 +16,7 @@ public:
 
 	sf::Vector2i getSize() const { return m_size; }
 
-	bool isTileSolid(const sf::Vector2f& index) const { return m_level.at(index.x + index.y * m_size.x); }
+	bool isTileSolid(const sf::Vector2i& index) const { return m_level.at(index.x + index.y * m_size.x); }
 	bool isTileSolid(size_t i, size_t j) const { return m_level.at(i + j * m_size.x); }
 };
 
