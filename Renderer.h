@@ -32,9 +32,13 @@ public:
 class Renderer {
 protected:
 	sf::RenderWindow* m_window;
+	Level* m_level;
+
+protected:
+	bool dda(const sf::Vector2f& start, const sf::Vector2f& dir, sf::Vector2f& intersection);
 
 public:
-	Renderer(sf::RenderWindow* window, const Level* level);
+	Renderer(sf::RenderWindow* window, Level* level);
 
 	virtual void render(const Player& player) = 0;
 };
@@ -46,10 +50,10 @@ private:
 	sf::VertexArray m_levelVertecies{ sf::Quads };
 
 private:
-	void initialize(const Level* level);
+	void initialize();
 
 public:
-	MiniMapRenderer(sf::RenderWindow* window, const Level* level);
+	MiniMapRenderer(sf::RenderWindow* window, Level* level);
 
 	virtual void render(const Player& player) override;
 };
