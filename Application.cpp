@@ -21,9 +21,9 @@ void Application::initialize() {
 	m_window->setMouseCursorVisible(false);
 
 	m_level = Level{ { 16, 9 } };
-	m_player = Player{ { 8.5f, 4.5f }, std::numbers::pi / 2.0f, std::numbers::pi / 2.0f };
+	m_player = Player{ { 8.5f, 4.5f }, {std::numbers::pi / 2.0f, 0.0f }, std::numbers::pi / 2.0f};
 	//m_renderer = new MiniMapRenderer(m_window, &m_level);
-	m_renderer = new RaycastRenderer(m_window, &m_level);
+	m_renderer = new Renderer{ m_window, &m_level };
 }
 
 
@@ -41,13 +41,13 @@ void Application::handleInputs() {
 
 		case sf::Event::KeyPressed:
 			if (sfmlEvent.key.code == sf::Keyboard::W) {
-				m_player.setVelocity({ std::cosf(m_player.getAngle()), -std::sinf(m_player.getAngle()) });
+				m_player.setVelocity({ std::cosf(m_player.getAngle().x), -std::sinf(m_player.getAngle().x) });
 			} if (sfmlEvent.key.code == sf::Keyboard::A) {
-				m_player.setVelocity({ std::sinf(m_player.getAngle()), std::cos(m_player.getAngle()) });
+				m_player.setVelocity({ std::sinf(m_player.getAngle().x), std::cos(m_player.getAngle().x) });
 			} if (sfmlEvent.key.code == sf::Keyboard::S) {
-				m_player.setVelocity({ -std::cosf(m_player.getAngle()), std::sinf(m_player.getAngle()) });
+				m_player.setVelocity({ -std::cosf(m_player.getAngle().x), std::sinf(m_player.getAngle().x) });
 			} if (sfmlEvent.key.code == sf::Keyboard::D) {
-				m_player.setVelocity({ -std::sinf(m_player.getAngle()), -std::cosf(m_player.getAngle()) });
+				m_player.setVelocity({ -std::sinf(m_player.getAngle().x), -std::cosf(m_player.getAngle().x) });
 			} break;
 
 		case sf::Event::KeyReleased:
@@ -68,7 +68,7 @@ void Application::handleInputs() {
 void Application::update() {
 	float deltaTime = m_clock.restart().asSeconds();
 
-	float mouseOffset = sf::Mouse::getPosition(*m_window).x - m_window->getSize().x / 2.0f;
+	sf::Vector2f mouseOffset = sf::Mouse::getPosition(*m_window) - sf::Vector2f{ m_window->getSize() } / 2.0f;
 	m_player.setAngle(mouseOffset * deltaTime + m_player.getAngle());
 
 	const sf::Vector2f newPlayerPos = m_player.getPosition() + m_player.getVelocity() * deltaTime;
