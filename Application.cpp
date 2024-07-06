@@ -18,10 +18,12 @@ void Application::initialize() {
 	sf::String windowTitle = "Labyrinth of Minos";
 	sf::Uint32 windowStyle = sf::Style::Close;
 	m_window = new sf::RenderWindow{ windowSize, windowTitle, windowStyle };
+	m_window->setMouseCursorVisible(false);
 
 	m_level = Level{ { 16, 9 } };
 	m_player = Player{ { 8.5f, 4.5f }, std::numbers::pi / 2.0f, std::numbers::pi / 2.0f };
-	m_renderer = new MiniMapRenderer(m_window, &m_level);
+	//m_renderer = new MiniMapRenderer(m_window, &m_level);
+	m_renderer = new RaycastRenderer(m_window, &m_level);
 }
 
 
@@ -41,11 +43,11 @@ void Application::handleInputs() {
 			if (sfmlEvent.key.code == sf::Keyboard::W) {
 				m_player.setVelocity({ std::cosf(m_player.getAngle()), -std::sinf(m_player.getAngle()) });
 			} if (sfmlEvent.key.code == sf::Keyboard::A) {
-				m_player.setVelocity({ -std::sinf(m_player.getAngle()), -std::cos(m_player.getAngle()) });
+				m_player.setVelocity({ std::sinf(m_player.getAngle()), std::cos(m_player.getAngle()) });
 			} if (sfmlEvent.key.code == sf::Keyboard::S) {
 				m_player.setVelocity({ -std::cosf(m_player.getAngle()), std::sinf(m_player.getAngle()) });
 			} if (sfmlEvent.key.code == sf::Keyboard::D) {
-				m_player.setVelocity({ std::sinf(m_player.getAngle()), std::cosf(m_player.getAngle()) });
+				m_player.setVelocity({ -std::sinf(m_player.getAngle()), -std::cosf(m_player.getAngle()) });
 			} break;
 
 		case sf::Event::KeyReleased:
@@ -57,20 +59,25 @@ void Application::handleInputs() {
 	}
 
 	// Sets player direction
-	const sf::Vector2f tileSize = sf::Vector2f{ m_window->getSize() / m_level.getSize() };
-	sf::Vector2f mousePos = sf::Vector2f{ sf::Mouse::getPosition(*m_window) } / tileSize - m_player.getPosition();
-	m_player.setAngle(std::atan2f(-mousePos.y, mousePos.x));
+	//const sf::Vector2f tileSize = sf::Vector2f{ m_window->getSize() / m_level.getSize() };
+	//sf::Vector2f mousePos = sf::Vector2f{ sf::Mouse::getPosition(*m_window) } / tileSize - m_player.getPosition();
+	//m_player.setAngle(std::atan2f(-mousePos.y, mousePos.x));
 }
 
 
 void Application::update() {
 	float deltaTime = m_clock.restart().asSeconds();
 
+	float mouseOffset = sf::Mouse::getPosition(*m_window).x - m_window->getSize().x / 2.0f;
+	m_player.setAngle(mouseOffset * deltaTime + m_player.getAngle());
+
 	const sf::Vector2f newPlayerPos = m_player.getPosition() + m_player.getVelocity() * deltaTime;
 	const sf::Vector2i playerTile = sf::Vector2i{ newPlayerPos };
 	if (newPlayerPos.x >= 0.0f && newPlayerPos.x < m_level.getSize().x &&
 		newPlayerPos.y >= 0.0f && newPlayerPos.y < m_level.getSize().y && 
 		!m_level.isTileSolid(playerTile)) m_player.move(m_player.getVelocity() * deltaTime);
+
+	sf::Mouse::setPosition(sf::Vector2i{ m_window->getSize() / 2u }, *m_window);
 }
 
 

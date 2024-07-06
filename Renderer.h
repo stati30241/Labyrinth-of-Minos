@@ -33,11 +33,20 @@ public:
 
 class Renderer {
 protected:
+	struct DDAInfo {
+		bool hit;
+		sf::Vector2f intersectionPoint;
+		float euclideanDist;
+		float perpendicularDist;
+		bool side; // False is x, true is y
+	};
+
+protected:
 	sf::RenderWindow* m_window;
 	Level* m_level;
 
 protected:
-	bool dda(const sf::Vector2f& start, const sf::Vector2f& dir, float threshold, sf::Vector2f& intersection);
+	DDAInfo dda(const sf::Vector2f& start, const sf::Vector2f& dir, float threshold);
 
 public:
 	Renderer(sf::RenderWindow* window, Level* level);
@@ -56,6 +65,17 @@ private:
 
 public:
 	MiniMapRenderer(sf::RenderWindow* window, Level* level);
+
+	virtual void render(const Player& player) override;
+};
+
+
+class RaycastRenderer : public Renderer {
+private:
+	sf::VertexArray m_screen{ sf::Lines };
+
+public:
+	RaycastRenderer(sf::RenderWindow* window, Level* level);
 
 	virtual void render(const Player& player) override;
 };

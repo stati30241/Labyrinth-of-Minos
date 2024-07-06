@@ -7,7 +7,9 @@ Renderer::Renderer(sf::RenderWindow* window, Level* level)
 }
 
 
-bool Renderer::dda(const sf::Vector2f& start, const sf::Vector2f& dir, float threshold, sf::Vector2f& intersection) {
+Renderer::DDAInfo Renderer::dda(const sf::Vector2f& start, const sf::Vector2f& dir, float threshold) {
+	DDAInfo info{ false };
+
 	const sf::Vector2f unitStepSize = { std::sqrtf(1 + (dir.y / dir.x) * (dir.y / dir.x)),
 		std::sqrtf(1 + (dir.x / dir.y) * (dir.x / dir.y)) };
 	sf::Vector2i currentTile = sf::Vector2i{ start };
@@ -35,10 +37,12 @@ bool Renderer::dda(const sf::Vector2f& start, const sf::Vector2f& dir, float thr
 			currentTile.x += step.x;
 			distance = ray.x;
 			ray.x += unitStepSize.x;
+			info.side = 0;
 		} else {
 			currentTile.y += step.y;
 			distance = ray.y;
 			ray.y += unitStepSize.y;
+			info.side = 1;
 		}
 
 		if (currentTile.x >= 0 && currentTile.x < m_level->getSize().x &&
@@ -47,9 +51,15 @@ bool Renderer::dda(const sf::Vector2f& start, const sf::Vector2f& dir, float thr
 		}
 	}
 
-	if (intersectionFound && distance < threshold) intersection = start + dir * distance;
+	if (intersectionFound && distance < threshold) {
+		info.hit = true;
+		info.intersectionPoint = start + dir * distance;
+		info.euclideanDist = distance;
+		if (info.side) info.perpendicularDist = ray.y -unitStepSize.y;
+		else info.perpendicularDist = ray.x -unitStepSize.x;
+	}
 
-	return intersectionFound && distance < threshold;
+	return info;
 }
 
 
@@ -81,14 +91,14 @@ void MiniMapRenderer::render(const Player& player) {
 
 	sf::VertexArray viewArea{ sf::TriangleFan };
 	viewArea.append({ player.getPosition() * m_tileSize, sf::Color::Yellow });
-	size_t numRays = 300;
+	size_t numRays = 1200;
 	for (size_t i = 0; i < numRays; ++i) {
 		float angle = (player.getAngle() - player.getFov() / 2.0f) + (i / static_cast<float>(numRays)) * player.getFov();
 		sf::Vector2f rayDir = sf::Vector2f{ std::cosf(angle), -std::sinf(angle) };
 
-		sf::Vector2f intersection;
-		if (dda(player.getPosition(), rayDir, 5.0f, intersection)) {
-			viewArea.append({ intersection * m_tileSize, sf::Color::Yellow });
+		DDAInfo info = dda(player.getPosition(), rayDir, 5.0f);
+		if (info.hit) {
+			viewArea.append({ info.intersectionPoint * m_tileSize, sf::Color::Yellow });
 		} else {
 			viewArea.append({ (player.getPosition() + rayDir * 5.0f) * m_tileSize, sf::Color::Yellow });
 		}
@@ -97,4 +107,30 @@ void MiniMapRenderer::render(const Player& player) {
 	m_window->draw(m_levelVertecies);
 	m_window->draw(viewArea);
 	m_window->draw(playerCircle);
+}
+
+
+RaycastRenderer::RaycastRenderer(sf::RenderWindow* window, Level* level)
+	: Renderer{ window, level } {
+}
+
+
+void RaycastRenderer::render(const Player& player) {
+	m_screen.clear();
+
+	size_t numRays = m_window->getSize().x;
+	for (size_t i = 0; i < numRays; ++i) {
+		float angle = (player.getAngle() - player.getFov() / 2.0f) + (i / static_cast<float>(numRays)) * player.getFov();
+		sf::Vector2f rayDir = sf::Vector2f{ std::cosf(angle), -std::sinf(angle) };
+
+		DDAInfo info = dda(player.getPosition(), rayDir, 20.0f);
+		if (info.hit) {
+			float height = static_cast<int>(m_window->getSize().y) / info.perpendicularDist;
+			sf::Color color = (info.side) ? sf::Color::White : sf::Color{ 150, 150, 150 };
+			m_screen.append({ { static_cast<float>(i), (m_window->getSize().y - height) / 2.0f }, color });
+			m_screen.append({ { static_cast<float>(i), (m_window->getSize().y + height) / 2.0f }, color });
+		}
+	}
+
+	m_window->draw(m_screen);
 }
