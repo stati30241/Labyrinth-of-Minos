@@ -7,7 +7,7 @@ Renderer::Renderer(sf::RenderWindow* window, Level* level)
 }
 
 
-bool Renderer::dda(const sf::Vector2f& start, const sf::Vector2f& dir, sf::Vector2f& intersection) {
+bool Renderer::dda(const sf::Vector2f& start, const sf::Vector2f& dir, float threshold, sf::Vector2f& intersection) {
 	const sf::Vector2f unitStepSize = { std::sqrtf(1 + (dir.y / dir.x) * (dir.y / dir.x)),
 		std::sqrtf(1 + (dir.x / dir.y) * (dir.x / dir.y)) };
 	sf::Vector2i currentTile = sf::Vector2i{ start };
@@ -30,7 +30,7 @@ bool Renderer::dda(const sf::Vector2f& start, const sf::Vector2f& dir, sf::Vecto
 
 	bool intersectionFound = false;
 	float distance = 0.0f;
-	while (!intersectionFound && distance < 5) {
+	while (!intersectionFound && distance < threshold) {
 		if (ray.x < ray.y) {
 			currentTile.x += step.x;
 			distance = ray.x;
@@ -47,9 +47,9 @@ bool Renderer::dda(const sf::Vector2f& start, const sf::Vector2f& dir, sf::Vecto
 		}
 	}
 
-	if (intersectionFound) intersection = start + dir * distance;
+	if (intersectionFound && distance < threshold) intersection = start + dir * distance;
 
-	return intersectionFound;
+	return intersectionFound && distance < threshold;
 }
 
 
@@ -79,8 +79,22 @@ void MiniMapRenderer::render(const Player& player) {
 	playerCircle.setOrigin(10.0f, 10.0f);
 	playerCircle.setPosition(player.getPosition() * m_tileSize);
 
-	
+	sf::VertexArray viewArea{ sf::TriangleFan };
+	viewArea.append({ player.getPosition() * m_tileSize, sf::Color::Yellow });
+	size_t numRays = 300;
+	for (size_t i = 0; i < numRays; ++i) {
+		float angle = (player.getAngle() - player.getFov() / 2.0f) + (i / static_cast<float>(numRays)) * player.getFov();
+		sf::Vector2f rayDir = sf::Vector2f{ std::cosf(angle), -std::sinf(angle) };
+
+		sf::Vector2f intersection;
+		if (dda(player.getPosition(), rayDir, 5.0f, intersection)) {
+			viewArea.append({ intersection * m_tileSize, sf::Color::Yellow });
+		} else {
+			viewArea.append({ (player.getPosition() + rayDir * 5.0f) * m_tileSize, sf::Color::Yellow });
+		}
+	}
 
 	m_window->draw(m_levelVertecies);
+	m_window->draw(viewArea);
 	m_window->draw(playerCircle);
 }

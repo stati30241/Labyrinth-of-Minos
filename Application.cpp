@@ -20,7 +20,7 @@ void Application::initialize() {
 	m_window = new sf::RenderWindow{ windowSize, windowTitle, windowStyle };
 
 	m_level = Level{ { 16, 9 } };
-	m_player = Player{ { 8.5f, 4.5f }, { 0.0f, -1.0f } };
+	m_player = Player{ { 8.5f, 4.5f }, std::numbers::pi / 2.0f, std::numbers::pi / 2.0f };
 	m_renderer = new MiniMapRenderer(m_window, &m_level);
 }
 
@@ -39,13 +39,13 @@ void Application::handleInputs() {
 
 		case sf::Event::KeyPressed:
 			if (sfmlEvent.key.code == sf::Keyboard::W) {
-				m_player.setVelocity(m_player.getDirection());
+				m_player.setVelocity({ std::cosf(m_player.getAngle()), -std::sinf(m_player.getAngle()) });
 			} if (sfmlEvent.key.code == sf::Keyboard::A) {
-				m_player.setVelocity({ m_player.getDirection().y, -m_player.getDirection().x });
+				m_player.setVelocity({ -std::sinf(m_player.getAngle()), -std::cos(m_player.getAngle()) });
 			} if (sfmlEvent.key.code == sf::Keyboard::S) {
-				m_player.setVelocity(-m_player.getDirection());
+				m_player.setVelocity({ -std::cosf(m_player.getAngle()), std::sinf(m_player.getAngle()) });
 			} if (sfmlEvent.key.code == sf::Keyboard::D) {
-				m_player.setVelocity({ -m_player.getDirection().y, m_player.getDirection().x });
+				m_player.setVelocity({ std::sinf(m_player.getAngle()), std::cosf(m_player.getAngle()) });
 			} break;
 
 		case sf::Event::KeyReleased:
@@ -57,9 +57,9 @@ void Application::handleInputs() {
 	}
 
 	// Sets player direction
-	sf::Vector2f mousePos = sf::Vector2f{ sf::Mouse::getPosition(*m_window) };
 	const sf::Vector2f tileSize = sf::Vector2f{ m_window->getSize() / m_level.getSize() };
-	m_player.setDirection(normalize(mousePos / tileSize - m_player.getPosition()));
+	sf::Vector2f mousePos = sf::Vector2f{ sf::Mouse::getPosition(*m_window) } / tileSize - m_player.getPosition();
+	m_player.setAngle(std::atan2f(-mousePos.y, mousePos.x));
 }
 
 

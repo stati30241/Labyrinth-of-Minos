@@ -7,12 +7,13 @@ class Player {
 private:
 	sf::Vector2f m_position;
 	sf::Vector2f m_velocity;
-	sf::Vector2f m_direction;
+	float m_angle = 0.0f;
+	float m_fov = 0.0f;
 
 public:
 	Player() { };
-	Player(const sf::Vector2f& position, const sf::Vector2f& direction)
-		: m_position{ position }, m_velocity{ }, m_direction{ direction } {
+	Player(const sf::Vector2f& position, float angle, float fov)
+		: m_position{ position }, m_velocity{ }, m_angle{ angle }, m_fov{ fov } {
 
 	}
 
@@ -20,12 +21,13 @@ public:
 	void move(const sf::Vector2f& offset) { m_position += offset; }
 	void setVelocity(const sf::Vector2f& velocity) { m_velocity = velocity; }
 	void accelerate(const sf::Vector2f& offset) { m_velocity += offset; }
-	void setDirection(const sf::Vector2f& direction) { m_direction = direction; }
+	void setAngle(float angle) { m_angle = angle; }
+	void setFov(float fov) { m_fov = fov; }
 
 	sf::Vector2f getPosition() const { return m_position; }
 	sf::Vector2f getVelocity() const { return m_velocity; }
-	sf::Vector2f getDirection() const { return m_direction; }
-	sf::Vector2f getCameraPlane() const { return sf::Vector2f{ -m_direction.y, m_direction.x }; }
+	float getAngle() const { return m_angle; }
+	float getFov() const { return m_fov; }
 };
 
 
@@ -35,7 +37,7 @@ protected:
 	Level* m_level;
 
 protected:
-	bool dda(const sf::Vector2f& start, const sf::Vector2f& dir, sf::Vector2f& intersection);
+	bool dda(const sf::Vector2f& start, const sf::Vector2f& dir, float threshold, sf::Vector2f& intersection);
 
 public:
 	Renderer(sf::RenderWindow* window, Level* level);
