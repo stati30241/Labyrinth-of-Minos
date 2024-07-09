@@ -63,21 +63,56 @@ Renderer::DDAInfo Renderer::dda(const sf::Vector2f& start, const sf::Vector2f& d
 
 void Renderer::render(const Player& player) {
 	m_screen.clear();
+	float centerY = -std::tanf(player.getAngle().y) * m_window->getSize().y / 2.0f + m_window->getSize().y / 2.0f;
+
+	/*
+	for (size_t i = centerY; i < m_window->getSize().y; ++i) {
+		float distance = 1.0f / (static_cast<float>(i) / m_window->getSize().y);
+		sf::Uint8 colorValue = static_cast<std::uint8_t>(255.0f * std::powf(distance - 1.0f, 4));
+		sf::Color color = { colorValue, 0, 0 };
+		m_screen.append({ { 0.0f, static_cast<float>(i) }, color });
+		m_screen.append({ { static_cast<float>(m_window->getSize().x), static_cast<float>(i) }, color });
+	}*/
+
+	for (size_t j = 0; j < m_window->getSize().y; ++j) {
+		sf::Vector2f start = player.getDirection() - player.getCameraPlane();
+		sf::Vector2f end = player.getDirection() + player.getCameraPlane();
+
+		float screenPosY = j - centerY;
+		float rowDistance = centerY / screenPosY;
+
+		sf::Vector2f floorStep = rowDistance * (start - end) / static_cast<float>(m_window->getSize().x);
+		for (size_t i = 0; i < m_window->getSize().x; ++i) {
+
+		}
+
+		sf::Uint8 colorValue = static_cast<std::uint8_t>(255.0f * std::powf(1.0f - rowDistance / 5.0f, 3));
+		sf::Color color = { colorValue, colorValue, colorValue };
+
+		m_screen.append({ { 0, static_cast<float>(j) }, color });
+		m_screen.append({ { static_cast<float>(m_window->getSize().x), static_cast<float>(j) }, color });
+	}
 
 	size_t numRays = m_window->getSize().x;
 	for (size_t i = 0; i < numRays; ++i) {
 		float cameraX = 2.0f * (static_cast<float>(i) / numRays) - 1.0f;
 		sf::Vector2f rayDir = player.getDirection() + player.getCameraPlane() * cameraX;
 
-		DDAInfo info = dda(player.getPosition(), rayDir, 20.0f);
+		DDAInfo info = dda(player.getPosition(), rayDir, 5.0f);
 		if (info.hit) {
 			float height = static_cast<float>(m_window->getSize().y) / (info.distance);
-			sf::Color color = (info.side) ? sf::Color::White : sf::Color{ 150, 150, 150 };
+
+			sf::Uint8 colorValue = static_cast<std::uint8_t>(255.0f * std::powf(1.0f - info.distance / 5.0f, 3));
+			sf::Color color = { colorValue, colorValue, colorValue };
+
+			float textureIndex = (!info.side) ? static_cast<int>(32.0f * (info.intersectionPoint.y - (int)info.intersectionPoint.y)) :
+				static_cast<int>(32.0f * (info.intersectionPoint.x - (int)info.intersectionPoint.x));
 			
-			m_screen.append({ { static_cast<float>(i), (m_window->getSize().y - height) / 2.0f }, color });
-			m_screen.append({ { static_cast<float>(i), (m_window->getSize().y + height) / 2.0f }, color });
+			m_screen.append({ { static_cast<float>(i), centerY - height / 2.0f }, color, {textureIndex, 0.0f} });
+			m_screen.append({ { static_cast<float>(i), centerY + height / 2.0f }, color, {textureIndex, 32.0f} });
 		}
 	}
 
-	m_window->draw(m_screen);
+	sf::RenderStates states{ &TextureManager::get("textureAtlas.png").texture };
+	m_window->draw(m_screen, states);
 }

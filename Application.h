@@ -14,6 +14,8 @@ private:
 
 private:
 	void initialize();
+
+	void updatePlayerPosition(float deltaTime);
 	
 	void handleInputs();
 	void update();

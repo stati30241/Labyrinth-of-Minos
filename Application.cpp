@@ -14,7 +14,7 @@ Application::~Application() {
 
 
 void Application::initialize() {
-	sf::VideoMode windowSize = { 1200u, 675u };
+	sf::VideoMode windowSize = { 1200u, 676u };
 	sf::String windowTitle = "Labyrinth of Minos";
 	sf::Uint32 windowStyle = sf::Style::Close;
 	m_window = new sf::RenderWindow{ windowSize, windowTitle, windowStyle };
@@ -22,8 +22,22 @@ void Application::initialize() {
 
 	m_level = Level{ { 16, 9 } };
 	m_player = Player{ { 8.5f, 4.5f }, {std::numbers::pi / 2.0f, 0.0f }, std::numbers::pi / 2.0f};
-	//m_renderer = new MiniMapRenderer(m_window, &m_level);
 	m_renderer = new Renderer{ m_window, &m_level };
+}
+
+
+void Application::updatePlayerPosition(float deltaTime) {
+	const sf::Vector2f newPlayerPos = m_player.getPosition() + m_player.getVelocity() * deltaTime;
+	if (newPlayerPos.x < 0.0f || newPlayerPos.x >= m_level.getSize().x ||
+		newPlayerPos.y < 0.0f || newPlayerPos.y >= m_level.getSize().y) return;
+
+	const sf::Vector2i currentPlayerTile = sf::Vector2i{ m_player.getPosition() };
+	const sf::Vector2i newPlayerTile = sf::Vector2i{ newPlayerPos };
+	if (!m_level.isTileSolid(newPlayerTile)) m_player.setPosition(newPlayerPos);
+	else if (!m_level.isTileSolid({ newPlayerTile.x, currentPlayerTile.y })) 
+		m_player.setPosition({ newPlayerPos.x, m_player.getPosition().y });
+	else if (!m_level.isTileSolid({ currentPlayerTile.x, newPlayerTile.y }))
+		m_player.setPosition({ m_player.getPosition().x, newPlayerPos.y });
 }
 
 
@@ -57,11 +71,6 @@ void Application::handleInputs() {
 			} break;
 		}
 	}
-
-	// Sets player direction
-	//const sf::Vector2f tileSize = sf::Vector2f{ m_window->getSize() / m_level.getSize() };
-	//sf::Vector2f mousePos = sf::Vector2f{ sf::Mouse::getPosition(*m_window) } / tileSize - m_player.getPosition();
-	//m_player.setAngle(std::atan2f(-mousePos.y, mousePos.x));
 }
 
 
@@ -71,11 +80,7 @@ void Application::update() {
 	sf::Vector2f mouseOffset = sf::Mouse::getPosition(*m_window) - sf::Vector2f{ m_window->getSize() } / 2.0f;
 	m_player.setAngle(mouseOffset * deltaTime + m_player.getAngle());
 
-	const sf::Vector2f newPlayerPos = m_player.getPosition() + m_player.getVelocity() * deltaTime;
-	const sf::Vector2i playerTile = sf::Vector2i{ newPlayerPos };
-	if (newPlayerPos.x >= 0.0f && newPlayerPos.x < m_level.getSize().x &&
-		newPlayerPos.y >= 0.0f && newPlayerPos.y < m_level.getSize().y && 
-		!m_level.isTileSolid(playerTile)) m_player.move(m_player.getVelocity() * deltaTime);
+	updatePlayerPosition(deltaTime);
 
 	sf::Mouse::setPosition(sf::Vector2i{ m_window->getSize() / 2u }, *m_window);
 }
