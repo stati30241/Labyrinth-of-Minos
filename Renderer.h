@@ -47,6 +47,8 @@ private:
 	sf::RenderWindow* m_window;
 	Level* m_level;
 	sf::VertexArray m_screen{ sf::Lines };
+	sf::Image m_texture;
+	sf::Image m_floor;
 
 private:
 	DDAInfo dda(const sf::Vector2f& start, const sf::Vector2f& dir, float threshold);

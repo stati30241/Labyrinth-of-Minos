@@ -32,6 +32,10 @@ template <typename T>
 inline sf::Vector2f normalize(const sf::Vector2<T>& vec) {
     return sf::Vector2f{ vec } / length(vec);
 }
+template <typename T>
+inline sf::Vector2<T> perpendicular(const sf::Vector2<T>& vec) {
+	return sf::Vector2<T>{ -vec.y, vec.x };
+}
 
 
 class TextureManager {
