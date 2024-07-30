@@ -79,10 +79,17 @@ void Application::update() {
 
 	sf::Vector2f mouseOffset = sf::Mouse::getPosition(*m_window) - sf::Vector2f{ m_window->getSize() } / 2.0f;
 	m_player.setAngle(mouseOffset * deltaTime + m_player.getAngle());
+	
+	// Clamp vertical angle
+	float maxAngle = std::numbers::pi / 4.0f;
+	if (m_player.getAngle().y < -maxAngle) m_player.setAngle({ m_player.getAngle().x, -maxAngle });
+	if (m_player.getAngle().y > maxAngle) m_player.setAngle({ m_player.getAngle().x, maxAngle });
 
 	updatePlayerPosition(deltaTime);
 
 	sf::Mouse::setPosition(sf::Vector2i{ m_window->getSize() / 2u }, *m_window);
+
+	m_window->setTitle("FPS: " + std::to_string(1.0f / deltaTime));
 }
 
 

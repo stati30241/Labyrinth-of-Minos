@@ -49,6 +49,7 @@ private:
 	sf::VertexArray m_screen{ sf::Lines };
 	sf::Image m_texture;
 	sf::Image m_floor;
+	std::vector<float> m_heightBuffer;
 
 private:
 	DDAInfo dda(const sf::Vector2f& start, const sf::Vector2f& dir, float threshold);

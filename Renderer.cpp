@@ -64,12 +64,41 @@ Renderer::DDAInfo Renderer::dda(const sf::Vector2f& start, const sf::Vector2f& d
 
 void Renderer::render(const Player& player) {
 	m_screen.clear();
-	float centerY = m_window->getSize().y / 2.0f;
+	m_heightBuffer.clear();
+	float pitch = std::tanf(player.getAngle().y);
+	float centerY = m_window->getSize().y / 2.0f - pitch * 0.5f * m_window->getSize().y;
 	
-	for (size_t j = m_window->getSize().y / 2; j < m_window->getSize().y; ++j) {
+	size_t numRays = m_window->getSize().x;
+	for (size_t i = 0; i < numRays; ++i) {
+		float cameraX = 2.0f * (static_cast<float>(i) / numRays) - 1.0f;
+		sf::Vector2f rayDir = player.getDirection() + player.getCameraPlane() * cameraX;
+
+		DDAInfo info = dda(player.getPosition(), rayDir, 5.0f);
+		if (info.hit) {
+			float height = static_cast<float>(m_window->getSize().y) / (info.distance);
+			m_heightBuffer.push_back(height);
+
+			sf::Uint8 colorValue = static_cast<std::uint8_t>(255.0f * std::powf(1.0f - info.distance / 5.0f, 3));
+			sf::Color color = { colorValue, colorValue, colorValue };
+
+			float textureIndex = (!info.side) ? static_cast<int>(32.0f * (info.intersectionPoint.y - (int)info.intersectionPoint.y)) :
+				static_cast<int>(32.0f * (info.intersectionPoint.x - (int)info.intersectionPoint.x));
+			
+			float offset = m_window->getSize().y / 2.0f - 0.5f * m_window->getSize().y * pitch;
+			m_screen.append({ { static_cast<float>(i), centerY - height / 2.0f }, color, {textureIndex, 0.0f} });
+			m_screen.append({ { static_cast<float>(i), centerY + height / 2.0f }, color, {textureIndex, 32.0f} });
+		} else m_heightBuffer.push_back(0);
+	}
+	sf::RenderStates states{ &TextureManager::get("textureAtlas.png").texture };
+	m_window->draw(m_screen, states);
+
+	for (float j = 0; j < m_window->getSize().y; ++j) {
 		sf::Vector2f distance;
-		distance.x = centerY / (j - centerY);
-		if (distance.x > 5.0f) continue;
+		distance.x = (0.5f * m_window->getSize().y) / std::fabsf(j - centerY);
+		if (distance.x > 5.0f) {
+			for (size_t i = 0; i < m_window->getSize().x; ++i) m_floor.setPixel(i, j, sf::Color::Transparent);
+			continue;
+		}
 
 		sf::Vector2f start = player.getPosition() + distance.x * (player.getDirection() - player.getCameraPlane());
 		sf::Vector2f end = player.getPosition() + distance.x * (player.getDirection() + player.getCameraPlane());
@@ -79,41 +108,24 @@ void Renderer::render(const Player& player) {
 		for (size_t i = 0; i < m_window->getSize().x; ++i) {
 			sf::Vector2f cellPos = start;
 			start += step;
+
+			if (m_heightBuffer.at(i) != 0 && (j >= centerY - m_heightBuffer.at(i) * 0.5f && j <= centerY + m_heightBuffer.at(i) * 0.5f)) {
+				m_floor.setPixel(i, j, sf::Color::Transparent);
+				continue;
+			}
+
 			sf::Vector2i cell = { static_cast<int>(std::floorf(cellPos.x)), static_cast<int>(std::floorf(cellPos.y)) };
 			sf::Vector2i textPos = sf::Vector2i{ 32.0f * (cellPos - cell) };
-			
+
 			sf::Uint8 colorValue = static_cast<std::uint8_t>(255.0f * std::powf(1.0f - distance.x / 5.0f, 3));
 			sf::Color color = { colorValue, colorValue, colorValue };
 
+			if (j < 0) continue;
 			m_floor.setPixel(i, j, m_texture.getPixel(32 + textPos.x, textPos.y) * color);
-			m_floor.setPixel(i, m_window->getSize().y - j - 1, m_texture.getPixel(32 + textPos.x, textPos.y) * color);
 		}
 	}
 	sf::Texture t;
 	t.loadFromImage(m_floor);
 	sf::Sprite s{ t };
 	m_window->draw(s);
-
-	size_t numRays = m_window->getSize().x;
-	for (size_t i = 0; i < numRays; ++i) {
-		float cameraX = 2.0f * (static_cast<float>(i) / numRays) - 1.0f;
-		sf::Vector2f rayDir = player.getDirection() + player.getCameraPlane() * cameraX;
-
-		DDAInfo info = dda(player.getPosition(), rayDir, 5.0f);
-		if (info.hit) {
-			float height = static_cast<float>(m_window->getSize().y) / (info.distance);
-
-			sf::Uint8 colorValue = static_cast<std::uint8_t>(255.0f * std::powf(1.0f - info.distance / 5.0f, 3));
-			sf::Color color = { colorValue, colorValue, colorValue };
-
-			float textureIndex = (!info.side) ? static_cast<int>(32.0f * (info.intersectionPoint.y - (int)info.intersectionPoint.y)) :
-				static_cast<int>(32.0f * (info.intersectionPoint.x - (int)info.intersectionPoint.x));
-			
-			m_screen.append({ { static_cast<float>(i), centerY - height / 2.0f }, color, {textureIndex, 0.0f} });
-			m_screen.append({ { static_cast<float>(i), centerY + height / 2.0f }, color, {textureIndex, 32.0f} });
-		}
-	}
-
-	sf::RenderStates states{ &TextureManager::get("textureAtlas.png").texture };
-	m_window->draw(m_screen, states);
 }
